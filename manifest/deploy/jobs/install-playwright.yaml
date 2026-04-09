@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: install-playwright-browsers
+  namespace: gpt-clawunit
+  labels:
+    app: clawunit
+    component: playwright-install
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: clawunit
+        component: playwright-install
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: install-playwright
+          image: ghcr.io/openclaw/openclaw:latest
+          command:
+            - node
+            - /app/node_modules/playwright-core/cli.js
+            - install
+            - chromium
+          env:
+            - name: PLAYWRIGHT_BROWSERS_PATH
+              value: /home/node/.cache/ms-playwright
+          volumeMounts:
+            - name: playwright-browsers
+              mountPath: /home/node/.cache/ms-playwright
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+      volumes:
+        - name: playwright-browsers
+          persistentVolumeClaim:
+            claimName: gpt-clawunit-playwright-browsers
